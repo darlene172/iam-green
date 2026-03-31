@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
 import OnboardingScreen from './screens/OnboardingScreen';
 
@@ -11,7 +11,7 @@ const CreditsTab       = lazy(() => import('./screens/CreditsTab'));
 const ProfileTab       = lazy(() => import('./screens/ProfileTab'));
 
 function TabFallback() {
-  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#8AAD96' }}>Loading…</div>;
+  return <div style={{ padding: '40px', textAlign: 'center', color: '#8AAD96' }}>Loading…</div>;
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -20,78 +20,65 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const TABS = [
+  { to: '/',         end: true,  icon: '🏆', bg: '#FEF6DC', label: 'Leaderboard' },
+  { to: '/dashboard',end: false, icon: '📊', bg: '#D9F3E5', label: 'Dashboard'   },
+  { to: '/map',      end: false, icon: '🗺️', bg: '#D0EDFD', label: 'Map'         },
+  { to: '/report',   end: false, icon: '📷', bg: '#E8F5EE', label: 'Report'      },
+  { to: '/credits',  end: false, icon: '💳', bg: '#EBE8FA', label: 'Credits'     },
+  { to: '/profile',  end: false, icon: '👤', bg: '#DDE6ED', label: 'Profile'     },
+];
+
 function TabBar() {
   const { session } = useAuth();
   if (!session) return null;
-
-  const tabStyle: React.CSSProperties = {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '6px 4px',
-    fontSize: '9.5px',
-    fontWeight: 600,
-    color: '#8AAD96',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    gap: '4px',
-    textDecoration: 'none',
-    fontFamily: "'Noto Sans', sans-serif",
-  };
-
-  const activeStyle: React.CSSProperties = {
-    ...tabStyle,
-    color: '#1F8F56',
-    background: '#EFF9F3',
-    borderRadius: '10px',
-  };
-
-  const iconStyle: React.CSSProperties = {
-    width: '32px',
-    height: '32px',
-    borderRadius: '9px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '18px',
-  };
-
   return (
     <nav style={{
       display: 'flex',
-      background: '#ffffff',
+      background: '#fff',
       borderTop: '1px solid #E3EFE7',
-      padding: '6px 4px 14px',
+      padding: '6px 2px 14px',
       boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
       flexShrink: 0,
     }}>
-      <NavLink to="/" end style={({ isActive }) => isActive ? activeStyle : tabStyle}>
-        <div style={{ ...iconStyle, background: '#FEF6DC' }}>🏆</div>
-        <span>Leaderboard</span>
-      </NavLink>
-      <NavLink to="/dashboard" style={({ isActive }) => isActive ? activeStyle : tabStyle}>
-        <div style={{ ...iconStyle, background: '#D9F3E5' }}>📊</div>
-        <span>Dashboard</span>
-      </NavLink>
-      <NavLink to="/map" style={({ isActive }) => isActive ? activeStyle : tabStyle}>
-        <div style={{ ...iconStyle, background: '#D0EDFD' }}>🗺️</div>
-        <span>Map</span>
-      </NavLink>
-      <NavLink to="/report" style={({ isActive }) => isActive ? activeStyle : tabStyle}>
-        <div style={{ ...iconStyle, background: '#E8F5EE' }}>📷</div>
-        <span>Report</span>
-      </NavLink>
-      <NavLink to="/credits" style={({ isActive }) => isActive ? activeStyle : tabStyle}>
-        <div style={{ ...iconStyle, background: '#EBE8FA' }}>💳</div>
-        <span>Credits</span>
-      </NavLink>
-      <NavLink to="/profile" style={({ isActive }) => isActive ? activeStyle : tabStyle}>
-        <div style={{ ...iconStyle, background: '#DDE6ED' }}>👤</div>
-        <span>Profile</span>
-      </NavLink>
+      {TABS.map(t => (
+        <NavLink
+          key={t.to}
+          to={t.to}
+          end={t.end}
+          style={({ isActive }) => ({
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '3px',
+            padding: '5px 2px',
+            borderRadius: '10px',
+            textDecoration: 'none',
+            fontFamily: "'Noto Sans', sans-serif",
+            fontSize: '9px',
+            fontWeight: 600,
+            color: isActive ? '#1F8F56' : '#8AAD96',
+            background: isActive ? '#EFF9F3' : 'transparent',
+            minWidth: 0,
+          })}
+        >
+          <div style={{
+            width: '30px',
+            height: '30px',
+            borderRadius: '8px',
+            background: t.bg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+          }}>
+            {t.icon}
+          </div>
+          <span style={{ fontSize: '9px', whiteSpace: 'nowrap' }}>{t.label}</span>
+        </NavLink>
+      ))}
     </nav>
   );
 }
@@ -100,38 +87,57 @@ export default function App() {
   const { session } = useAuth();
   return (
     <div style={{
-      maxWidth: '480px',
-      margin: '0 auto',
+      display: 'flex',
+      justifyContent: 'center',
       minHeight: '100vh',
       background: '#EEF5F0',
-      display: 'flex',
-      flexDirection: 'column',
-      fontFamily: "'Noto Sans', sans-serif",
     }}>
-      {session && (
-        <div style={{
-          background: '#1A7A4A',
-          color: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 20px 14px',
-          flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.1rem' }}>♻️</span>
-            <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.3px' }}>iAM Green</span>
+      <div style={{
+        width: '100%',
+        maxWidth: '480px',
+        minHeight: '100vh',
+        background: '#EEF5F0',
+        display: 'flex',
+        flexDirection: 'column',
+        fontFamily: "'Noto Sans', sans-serif",
+      }}>
+        {session && (
+          <div style={{
+            background: '#1A7A4A',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 20px 14px',
+            flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
+                <circle cx="15" cy="15" r="14" fill="#E8F5EE"/>
+                <path d="M15 6c-2 4-6 5-6 9a6 6 0 0012 0c0-4-4-5-6-9z" fill="#1F8F56"/>
+                <path d="M11 17c1-1 3-1.5 4-3 1 1.5 3 2 4 3" stroke="#1A7A4A" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+              </svg>
+              <span style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '-0.3px' }}>iAM Green</span>
+            </div>
+            <span style={{ fontSize: '12px', opacity: 0.85 }}>Recycling Rewards</span>
           </div>
-          <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>Recycling Rewards</span>
+        )}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Suspense fallback={<TabFallback />}>
+            <Routes>
+              <Route path="/onboarding" element={<OnboardingScreen />} />
+              <Route path="/" element={<AuthGuard><LeaderboardTab /></AuthGuard>} />
+              <Route path="/dashboard" element={<AuthGuard><DashboardTab /></AuthGuard>} />
+              <Route path="/map" element={<AuthGuard><MapTab /></AuthGuard>} />
+              <Route path="/report" element={<AuthGuard><GarbageReportTab /></AuthGuard>} />
+              <Route path="/credits" element={<AuthGuard><CreditsTab /></AuthGuard>} />
+              <Route path="/profile" element={<AuthGuard><ProfileTab /></AuthGuard>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </div>
-      )}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        <Suspense fallback={<TabFallback />}>
-          <Routes>
-            <Route path="/onboarding" element={<OnboardingScreen />} />
-            <Route path="/" element={<AuthGuard><LeaderboardTab /></AuthGuard>} />
-            <Route path="/dashboard" element={<AuthGuard><DashboardTab /></AuthGuard>} />
-            <Route path="/map" element={<AuthGuard><MapTab /></AuthGuard>} />
-            <Route path="/report" element={<AuthGuard><GarbageReportTab /></AuthGuard>} />
-            <Route path="/credits" element={<AuthGuard><CreditsTab /></AuthGuard>} />
-            <Route path="/profile" ele
+        <TabBar />
+      </div>
+    </div>
+  );
+}
