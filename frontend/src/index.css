@@ -21,7 +21,7 @@ html, body, #root {
 
 .app-shell {
   width: 100%;
-  max-width: 480px;
+  max-width: 390px;
   min-height: 100vh;
   background: #EEF5F0;
   display: flex;

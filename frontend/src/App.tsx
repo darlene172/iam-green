@@ -94,7 +94,7 @@ export default function App() {
     }}>
       <div style={{
         width: '100%',
-        maxWidth: '480px',
+        maxWidth: '600px',
         minHeight: '100vh',
         background: '#EEF5F0',
         display: 'flex',
