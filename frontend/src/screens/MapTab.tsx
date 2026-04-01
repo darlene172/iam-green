@@ -1,8 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import MaterialCamera from '../components/MaterialCamera';
-import { useNavigate } from 'react-router-dom';
 
 const COLLECTION_POINTS = [
   { id: 1,  name: 'Wan Chai Recycling Station',   lat: 22.2783, lng: 114.1747, tier: 'basic'   },
@@ -31,45 +29,54 @@ function AutoLocate() {
 }
 
 export default function MapTab() {
-  const navigate = useNavigate();
-  const [showCamera, setShowCamera] = useState(false);
+  const [search, setSearch] = useState('');
   const [showBin, setShowBin] = useState(false);
   const [binSent, setBinSent] = useState(false);
-  const [search, setSearch] = useState('');
   const [sortResult, setSortResult] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = COLLECTION_POINTS.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handlePhotoCapture = async (imageData: string) => {
-    setSortResult('Analyzing...');
-    setShowCamera(false);
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY ?? '',
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-5',
-          max_tokens: 300,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageData } },
-              { type: 'text', text: 'Identify the recyclable item in this image and tell me which recycling bin it goes in (Paper, Plastic, Glass, Metal, E-Waste, Clothing, or General Waste). Reply in 1-2 short sentences.' }
-            ]
-          }]
-        })
-      });
-      const data = await res.json();
-      setSortResult(data.content?.[0]?.text ?? 'Could not identify item.');
-    } catch {
-      setSortResult('Could not analyze image. Please try again.');
-    }
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAnalyzing(true);
+    setSortResult(null);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = (reader.result as string).split(',')[1];
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY ?? '',
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-opus-4-5',
+            max_tokens: 200,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+                { type: 'text', text: 'What recyclable item is this? Which bin does it go in: Paper (yellow), Plastic (blue), Glass (brown), Metal (blue), E-Waste (special), Clothing (green), or General Waste? Reply in 1-2 sentences.' }
+              ]
+            }]
+          })
+        });
+        const data = await res.json();
+        setSortResult(data.content?.[0]?.text ?? 'Could not identify item.');
+      } catch {
+        setSortResult('Could not analyze. Please try again.');
+      }
+      setAnalyzing(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -77,12 +84,13 @@ export default function MapTab() {
 
       {/* Buttons */}
       <div style={{ display: 'flex', gap: '8px', padding: '10px 16px', background: '#fff', borderBottom: '1px solid #E3EFE7', flexShrink: 0 }}>
-        <button onClick={() => { setShowCamera(true); setSortResult(null); }} style={{
+        <button onClick={() => fileRef.current?.click()} style={{
           flex: 1, padding: '9px', borderRadius: '99px',
           border: '1.5px solid #2AA962', background: '#EFF9F3',
           color: '#1A7A4A', fontWeight: 700, fontSize: '13px',
           cursor: 'pointer', fontFamily: 'inherit',
         }}>♻️ Sort Item</button>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handlePhoto} />
         <button onClick={() => setShowBin(!showBin)} style={{
           flex: 1, padding: '9px', borderRadius: '99px',
           border: '1.5px solid #CCDDD4', background: '#fff',
@@ -91,13 +99,10 @@ export default function MapTab() {
         }}>🗑️ Request Bin</button>
       </div>
 
-      {/* Camera */}
-      {showCamera && (
-        <div style={{ background: '#000', flexShrink: 0 }}>
-          <MaterialCamera
-            onCapture={handlePhotoCapture}
-            onClose={() => setShowCamera(false)}
-          />
+      {/* Analyzing */}
+      {analyzing && (
+        <div style={{ background: '#EFF9F3', padding: '10px 16px', flexShrink: 0, textAlign: 'center', fontSize: '13px', color: '#1A7A4A', fontWeight: 600 }}>
+          🔍 Analyzing your item...
         </div>
       )}
 
@@ -107,14 +112,14 @@ export default function MapTab() {
           <div style={{ fontWeight: 700, fontSize: '13px', color: '#155C38', marginBottom: '4px' }}>♻️ AI Result</div>
           <div style={{ fontSize: '13px', color: '#1E3D2A' }}>{sortResult}</div>
           <button onClick={() => setSortResult(null)} style={{
-            marginTop: '8px', padding: '6px 14px', borderRadius: '99px',
+            marginTop: '8px', padding: '5px 12px', borderRadius: '99px',
             border: 'none', background: '#2AA962', color: '#fff',
             fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
           }}>Clear</button>
         </div>
       )}
 
-      {/* Bin request panel */}
+      {/* Bin request */}
       {showBin && (
         <div style={{ background: '#fff', padding: '12px 16px', borderBottom: '1px solid #E3EFE7', flexShrink: 0 }}>
           <div style={{ fontWeight: 700, fontSize: '14px', color: '#0F2D1C', marginBottom: '8px' }}>🗑️ Request a recycling bin</div>
